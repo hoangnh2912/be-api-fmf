@@ -1,13 +1,22 @@
 const User = require("./models/User");
 const sha256 = require("sha256");
+
+const STATUS = {
+  CONNECT: 0,
+  DISCONNECT: 1,
+  WAIT: 2,
+};
+
+const onError = (message, code) => {
+  return {
+    message: message || "Đã có lỗi xảy ra",
+    code: code || 500,
+    status: 0,
+  };
+};
 module.exports = {
-  onError(message, code) {
-    return {
-      message: message || "Đã có lỗi xảy ra",
-      code: code || 500,
-      status: 0,
-    };
-  },
+  STATUS,
+  onError,
   onSuccess(data) {
     const { note, timestamp, _id } = data;
     const res = {
@@ -39,12 +48,16 @@ module.exports = {
       status: 1,
     };
   },
-  async checkAuth(req, res, callback) {
-    const auth = await User.find({
-      token: req.headers.token,
-    });
-    if (auth.length == 0) res.json(this.onError("Token không tồn tại", 403));
-    else callback();
+  checkAuth: async (req, res, callback) => {
+    try {
+      const { code } = req.headers;
+      const checkCode = await User.findOne({ code });
+      if (!checkCode) res.json(onError("Mã code chưa đúng"));
+      else callback();
+    } catch (error) {
+      console.log(error);
+      res.json(onError());
+    }
   },
   getToken(req) {
     return sha256(req.body.username + Date.now() + req.body.password);

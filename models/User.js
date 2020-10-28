@@ -1,25 +1,32 @@
 const mongoose = require("mongoose");
-
 const UserSchema = mongoose.Schema({
-  username: {
+  name: {
     type: String,
     require: true,
   },
-  token: {
+  phone: {
     type: String,
     require: true,
   },
-  role: {
-    type: Number,
-    require: true,
-  },
-  password: {
+  deviceId: {
     type: String,
-    require: true,
+    default: null,
   },
-  timestamp: {
+  lastOnline: {
     type: String,
     default: new Date().getTime(),
+  },
+  code: {
+    type: String,
+    require: true,
+  },
+  host_code: {
+    type: String,
+    default: null,
+  },
+  status: {
+    type: Number,
+    default: 0,
   },
 });
 

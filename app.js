@@ -14,12 +14,13 @@ mongoose.connect(
     else console.log("connect to mongoDB success");
   }
 );
+console.clear();
 //routes
 const userRouter = require("./routes/user");
-app.use("/user", userRouter);
+app.use("/api", userRouter);
 app.get("/", (req, res) => {
   try {
-    res.send("Wellcome to MP_DEMO + auto reload");
+    res.send("no message");
   } catch (error) {
     res.send("Error");
   }

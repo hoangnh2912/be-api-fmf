@@ -2,80 +2,71 @@ const express = require("express");
 const router = express.Router();
 const sha256 = require("sha256");
 const User = require("../models/User");
-const { onError, onSuccess, getToken } = require("../const");
-router.post("/Login", async (req, res) => {
+const {
+  onError,
+  onSuccess,
+  onSuccessArray,
+  checkAuth,
+  STATUS,
+} = require("../const");
+router.post("/InputUserInfo", async (req, res) => {
   try {
-    const loginData = {
-      username: req.body.username.trim().toLowerCase(),
-      password: sha256(req.body.password),
-    };
-    const token = getToken(req);
-    const checkLogin = await User.findOneAndUpdate(loginData, { token: token });
-    if (checkLogin) {
-      loginData.token = token;
-      loginData.role = checkLogin.role;
-      delete loginData.password;
-      res.json(onSuccess(loginData));
-    } else res.json(onError("Sai tên đăng nhập hoặc mật khẩu"));
+    const phoneRq = req.body.phone;
+    const checkIsExistPhone = await User.findOne({ phone: phoneRq });
+    if (!checkIsExistPhone) {
+      const createUser = await new User({
+        ...req.body,
+        code: sha256(phoneRq + new Date().getTime()).substr(0, 8),
+      }).save();
+      const { code, name, phone } = createUser;
+      res.json(onSuccess({ code, name, phone }));
+    } else {
+      const { code } = await User.findOneAndUpdate(
+        { phone: checkIsExistPhone.phone },
+        { name: req.body.name }
+      );
+      res.json(onSuccess({ code, name: req.body.name }));
+    }
   } catch (error) {
-    res.json(onError("Đăng nhập thất bại"));
+    console.log(error);
+    res.json(onError());
   }
 });
-router.post("/Register", async (req, res) => {
+router.post("/SubscribeHost", checkAuth, async (req, res) => {
   try {
-    const check = await User.find({ username: req.body.username.trim() });
-    const userData = {
-      username: req.body.username.trim(),
-      token: getToken(req),
-      password: sha256(req.body.password),
-      role: req.body.role,
-    };
-    if (check.length == 0)
-      new User(userData).save().then(() => {
-        delete userData.password;
-        res.json(onSuccess(userData));
-      });
-    else {
-      res.json(onError("Tài khoản đã tồn tại", 409));
+    const { host_code } = req.body;
+    const { code } = req.headers;
+    const checkHostCode = await User.findOne({ code: host_code });
+    if (!checkHostCode) {
+      res.json(onError("Mã host code chưa đúng"));
+    } else {
+      const isUpdate = await User.findOneAndUpdate(
+        { code },
+        { host_code, status: STATUS.WAIT }
+      );
+      if (isUpdate) res.json(onSuccess({ host_code }));
+      else res.json(onError("Mã code chưa đúng"));
     }
   } catch (error) {
     res.json(onError());
   }
 });
 
-router.post("/Logout", async (req, res) => {
+router.post("/GetFamily", checkAuth, async (req, res) => {
   try {
-    res.json(onSuccess());
-  } catch (error) {
-    res.json(onError());
-  }
-});
-
-router.get("/UserInfo", async (req, res) => {
-  try {
-    const { username, role } = await User.findOne({ token: req.headers.token });
+    const { host_code } = await User.findOne({ code: req.headers.code });
+    const list = await User.find({ host_code });
     res.json(
-      onSuccess({
-        username,
-        role,
-      })
+      onSuccessArray(
+        list
+          .map(({ name, phone, code }) => ({ name, phone, code }))
+          .filter((elem) => elem.code != host_code)
+      )
     );
   } catch (error) {
     console.log(error);
-    res.json(onError("Tài khoản của bạn đã bị đăng nhập ở nơi khác"));
-  }
-});
-
-router.patch("/UpdateUserInfo", async (req, res) => {
-  try {
-    const update = await User.findOneAndUpdate(req.body._id, {
-      $set: {
-        title: req.body.title,
-      },
-    });
-    res.json(onSuccess(update));
-  } catch (error) {
     res.json(onError());
   }
 });
+
 module.exports = router;
