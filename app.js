@@ -26,7 +26,7 @@ app.get("/", (req, res) => {
 });
 
 setInterval(() => {
-  fetch("https://noce-juice-vape.herokuapp.com/").then((res) => {
+  fetch("https://find-my-family.herokuapp.com/").then((res) => {
     res.text().then((res) => {
       console.log(res);
     });
