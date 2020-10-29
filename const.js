@@ -17,7 +17,7 @@ const onError = (message, code) => {
 module.exports = {
   STATUS,
   onError,
-  onSuccess(data) {
+  onSuccess(data, message) {
     const { note, timestamp, _id } = data;
     const res = {
       id: _id,
@@ -27,16 +27,16 @@ module.exports = {
     };
     return {
       data: res,
-      message: "Thành công",
+      message: message || "Thành công",
       code: 200,
       status: 1,
     };
   },
-  onSuccessArray(data) {
+  onSuccessArray(data, message) {
     if (data && data.length != 0) {
       return {
         data,
-        message: "Thành công",
+        message: message || "Thành công",
         code: 200,
         status: 1,
       };

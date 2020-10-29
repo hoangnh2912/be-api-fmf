@@ -11,6 +11,9 @@ const {
 } = require("../const");
 router.post("/InputUserInfo", async (req, res) => {
   try {
+    if (!req.body.phone || !req.body.name)
+      return res.json(onError("Thiếu thông tin"));
+
     const phoneRq = req.body.phone;
     const checkIsExistPhone = await User.findOne({ phone: phoneRq });
     if (!checkIsExistPhone) {
@@ -52,17 +55,58 @@ router.post("/SubscribeHost", checkAuth, async (req, res) => {
   }
 });
 
-router.post("/GetFamily", checkAuth, async (req, res) => {
+router.get("/GetFamily", checkAuth, async (req, res) => {
   try {
     const { host_code } = await User.findOne({ code: req.headers.code });
-    const list = await User.find({ host_code });
-    res.json(
-      onSuccessArray(
-        list
-          .map(({ name, phone, code }) => ({ name, phone, code }))
-          .filter((elem) => elem.code != host_code)
-      )
-    );
+    if (!host_code) {
+      res.json(onError("Chưa tham gia host nào"));
+    } else {
+      const list = await User.find({ host_code });
+      res.json(
+        onSuccessArray(
+          list
+            .map(({ name, phone, code, host_code }) => ({
+              name,
+              phone,
+              code,
+              host_code,
+            }))
+            .filter((elem) => elem.code != host_code)
+        )
+      );
+    }
+  } catch (error) {
+    console.log(error);
+    res.json(onError());
+  }
+});
+router.post("/HostAcceptSubscribe", checkAuth, async (req, res) => {
+  try {
+    const condition = {
+      host_code: req.headers.code,
+      status: STATUS.WAIT,
+      code: req.body.code,
+    };
+    const checkMember = await User.findOne(condition);
+    if (!checkMember) {
+      res.json(onError("Không có lời mời nào"));
+    } else {
+      if (req.body.is_accept) {
+        let { code, status, host_code } = await User.findOneAndUpdate(
+          condition,
+          { status: STATUS.CONNECT }
+        );
+        res.json(onSuccess({ code, status, host_code }, "Chấp nhận lời mời"));
+      } else {
+        await User.findOneAndUpdate(condition, { host_code: null });
+        res.json(
+          onSuccess(
+            { host_code: condition.host_code, code: condition.code },
+            "Từ chối lời mời"
+          )
+        );
+      }
+    }
   } catch (error) {
     console.log(error);
     res.json(onError());
