@@ -59,7 +59,7 @@ router.get("/GetFamily", checkAuth, async (req, res) => {
   try {
     const { host_code } = await User.findOne({ code: req.headers.code });
     if (!host_code) {
-      res.json(onError("Chưa tham gia host nào"));
+      res.json(onError("Chưa tham gia host nào",200));
     } else {
       const list = await User.find({ host_code });
       res.json(
