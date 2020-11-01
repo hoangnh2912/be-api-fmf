@@ -59,19 +59,18 @@ router.get("/GetFamily", checkAuth, async (req, res) => {
   try {
     const { host_code } = await User.findOne({ code: req.headers.code });
     if (!host_code) {
-      res.json(onError("Chưa tham gia host nào",200));
+      res.json(onError("Chưa tham gia host nào", 200));
     } else {
       const list = await User.find({ host_code });
       res.json(
         onSuccessArray(
-          list
-            .map(({ name, phone, code, host_code }) => ({
-              name,
-              phone,
-              code,
-              host_code,
-            }))
-            .filter((elem) => elem.code != host_code)
+          list.map(({ name, phone, code, host_code }) => ({
+            name,
+            phone,
+            code,
+            host_code,
+          }))
+          // .filter((elem) => elem.code != host_code)
         )
       );
     }
