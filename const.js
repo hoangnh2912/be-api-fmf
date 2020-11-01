@@ -44,7 +44,7 @@ module.exports = {
     return {
       data: [],
       message: "Rỗng",
-      code: 204,
+      code: 200,
       status: 1,
     };
   },
