@@ -26,12 +26,12 @@ app.get("/", (req, res) => {
   }
 });
 
-setInterval(() => {
-  fetch("https://find-my-family.herokuapp.com/").then((res) => {
-    res.text().then((res) => {
-      console.log(res);
-    });
-  });
-}, 1500000);
+// setInterval(() => {
+//   fetch("https://find-my-family.herokuapp.com/").then((res) => {
+//     res.text().then((res) => {
+//       console.log(res);
+//     });
+//   });
+// }, 1500000);
 
 app.listen(process.env.PORT || 5000);
