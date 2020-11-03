@@ -64,11 +64,12 @@ router.get("/GetFamily", checkAuth, async (req, res) => {
       const list = await User.find({ host_code });
       res.json(
         onSuccessArray(
-          list.map(({ name, phone, code, host_code }) => ({
+          list.map(({ name, phone, code, host_code, status }) => ({
             name,
             phone,
             code,
             host_code,
+            status,
           }))
           // .filter((elem) => elem.code != host_code)
         )
