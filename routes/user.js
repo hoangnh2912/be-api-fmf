@@ -93,11 +93,15 @@ router.post("/HostAcceptSubscribe", checkAuth, async (req, res) => {
       res.json(onError("Không có lời mời nào"));
     } else {
       if (req.body.is_accept) {
-        let { code, status, host_code } = await User.findOneAndUpdate(
-          condition,
-          { status: STATUS.CONNECT }
+        let {
+          code,
+          status,
+          host_code,
+          name,
+        } = await User.findOneAndUpdate(condition, { status: STATUS.CONNECT });
+        res.json(
+          onSuccess({ code, status, host_code, name }, "Chấp nhận lời mời")
         );
-        res.json(onSuccess({ code, status, host_code }, "Chấp nhận lời mời"));
       } else {
         await User.findOneAndUpdate(condition, { host_code: null });
         res.json(
@@ -108,6 +112,43 @@ router.post("/HostAcceptSubscribe", checkAuth, async (req, res) => {
         );
       }
     }
+  } catch (error) {
+    console.log(error);
+    res.json(onError());
+  }
+});
+
+router.post("/HostUnsubscribeMember", checkAuth, async (req, res) => {
+  try {
+    const condition = {
+      code: req.body.code,
+      host_code: req.body.host_code,
+    };
+    const checkMember = await User.findOne(condition);
+    if (!checkMember) {
+      res.json(onError("Thành viên khônh hợp lệ"));
+    } else {
+      let { code, name } = await User.findOneAndUpdate(condition, {
+        host_code: null,
+      });
+      res.json(onSuccess({ code, name }, "Đã xoá thành viên"));
+    }
+  } catch (error) {
+    console.log(error);
+    res.json(onError());
+  }
+});
+
+router.post("/UpdateDeviceId", checkAuth, async (req, res) => {
+  try {
+    const condition = {
+      code: req.headers.code,
+    };
+    const deviceId = req.body.deviceId;
+    let { code, name } = await User.findOneAndUpdate(condition, {
+      deviceId,
+    });
+    res.json(onSuccess({ code, name, deviceId }, "Cập nhật thành công"));
   } catch (error) {
     console.log(error);
     res.json(onError());
