@@ -155,4 +155,20 @@ router.post("/UpdateDeviceId", checkAuth, async (req, res) => {
   }
 });
 
+router.post("/Logout", checkAuth, async (req, res) => {
+  try {
+    const code = req.headers.code;
+    const condition = {
+      code: req.headers.code,
+    };
+    let { name } = await User.findOneAndUpdate(condition, {
+      deviceId: null,
+    });
+    res.json(onSuccess({ code, name }, "Đăng xuất thành công"));
+  } catch (error) {
+    console.log(error);
+    res.json(onError());
+  }
+});
+
 module.exports = router;

@@ -17,7 +17,9 @@ mongoose.connect(
 console.clear();
 //routes
 const userRouter = require("./routes/user");
+const notifyRouter = require("./routes/notify");
 app.use("/api", userRouter);
+app.use("/api", notifyRouter);
 app.get("/", (req, res) => {
   try {
     res.send("no message");
