@@ -171,4 +171,26 @@ router.post("/Logout", checkAuth, async (req, res) => {
   }
 });
 
+router.post("/UpdateUserInfo", checkAuth, async (req, res) => {
+  try {
+    const condition = {
+      code: req.headers.code,
+    };
+    const check = await User.findOne(condition);
+    if (!check) {
+      res.json(onError());
+    } else {
+      const { phone, name } = req.body;
+      let { code } = await User.findOneAndUpdate(condition, {
+        phone,
+        name,
+      });
+      res.json(onSuccess({ code, phone, name }, "Sửa thông tin thành công"));
+    }
+  } catch (error) {
+    console.log(error);
+    res.json(onError());
+  }
+});
+
 module.exports = router;
