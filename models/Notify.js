@@ -1,11 +1,19 @@
 const mongoose = require("mongoose");
 const NotifySchema = mongoose.Schema({
-  title: {
+  headings: {
+    type: String,
+    require: true,
+  },
+  contents: {
     type: String,
     require: true,
   },
   code: {
     type: String,
+    require: true,
+  },
+  type: {
+    type: Number,
     require: true,
   },
   createAt: {
