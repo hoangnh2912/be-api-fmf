@@ -6,7 +6,11 @@ const STATUS = {
   DISCONNECT: 1,
   WAIT: 2,
 };
-
+const NOTIFY_STATUS = {
+  VIBRANT: 0,
+  MESSAGE: 1,
+  ACCEPT: 2,
+};
 const onError = (message, code) => {
   return {
     message: message || "Đã có lỗi xảy ra",
@@ -15,6 +19,7 @@ const onError = (message, code) => {
   };
 };
 module.exports = {
+  NOTIFY_STATUS,
   STATUS,
   onError,
   onSuccess(data, message) {

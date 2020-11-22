@@ -8,7 +8,10 @@ const {
   onSuccessArray,
   checkAuth,
   STATUS,
+  NOTIFY_STATUS,
 } = require("../const");
+const { sendNotification } = require("../utils/notify");
+
 router.post("/InputUserInfo", async (req, res) => {
   try {
     if (!req.body.phone || !req.body.name)
@@ -41,14 +44,21 @@ router.post("/SubscribeHost", checkAuth, async (req, res) => {
     const { code } = req.headers;
     const checkHostCode = await User.findOne({ code: host_code });
     if (!checkHostCode) {
-      res.json(onError("Mã host code chưa đúng"));
+      res.json(onError("Mã gia đình chưa đúng"));
     } else {
       const isUpdate = await User.findOneAndUpdate(
         { code },
         { host_code, status: STATUS.WAIT }
       );
-      if (isUpdate) res.json(onSuccess({ host_code }));
-      else res.json(onError("Mã code chưa đúng"));
+      if (isUpdate) {
+        sendNotification(
+          host_code,
+          NOTIFY_STATUS.ACCEPT,
+          "Find my family",
+          "Có yêu cầu tham gia"
+        );
+        res.json(onSuccess({ host_code }));
+      } else res.json(onError("Mã code chưa đúng"));
     }
   } catch (error) {
     res.json(onError());
@@ -57,26 +67,52 @@ router.post("/SubscribeHost", checkAuth, async (req, res) => {
 
 router.get("/GetFamily", checkAuth, async (req, res) => {
   try {
-    const { host_code } = await User.findOne({ code: req.headers.code });
-    if (!host_code) {
-      res.json(onError("Chưa tham gia host nào", 200));
-    } else {
-      const list = await User.find({ host_code });
-      res.json(
-        onSuccessArray(
-          list
-            .map(({ name, phone, code, host_code, status, lastOnline }) => ({
-              name,
-              phone,
-              code,
-              host_code,
-              status,
-              lastOnline,
-            }))
-            .filter((elem) => elem.code != host_code)
-        )
+    const { host_code, status } = await User.findOne({
+      code: req.headers.code,
+    });
+    const is_host = host_code == req.headers.code;
+
+    if (status == STATUS.WAIT && !is_host) {
+      const alone = await User.findOne({ code: req.headers.code });
+      const { name, phone, code, lastOnline } = alone;
+      return res.json(
+        onSuccessArray([{ name, phone, code, host_code, status, lastOnline }])
       );
     }
+    if (status == STATUS.WAIT && is_host) {
+      const alone = await User.findOne({ code: req.headers.code });
+      const { name, phone, code, lastOnline } = alone;
+      return res.json(
+        onSuccessArray([
+          {
+            name: "",
+            phone: "Vui lòng chia sẻ mã tham gia",
+            code,
+            host_code,
+            status: 99,
+          },
+        ])
+      );
+    }
+    if (!host_code) {
+      return res.json(onError("Chưa tham gia host nào", 200));
+    }
+
+    const list = await User.find({ host_code });
+    res.json(
+      onSuccessArray(
+        list
+          .map(({ name, phone, code, host_code, status, lastOnline }) => ({
+            name,
+            phone,
+            code,
+            host_code,
+            status,
+            lastOnline,
+          }))
+          .filter((elem) => elem.code != req.headers.code)
+      )
+    );
   } catch (error) {
     console.log(error);
     res.json(onError());
@@ -100,11 +136,23 @@ router.post("/HostAcceptSubscribe", checkAuth, async (req, res) => {
           host_code,
           name,
         } = await User.findOneAndUpdate(condition, { status: STATUS.CONNECT });
+        sendNotification(
+          req.body.code,
+          NOTIFY_STATUS.ACCEPT,
+          "Find my family",
+          "Bạn đã chấp nhận lời mời"
+        );
         res.json(
           onSuccess({ code, status, host_code, name }, "Chấp nhận lời mời")
         );
       } else {
         await User.findOneAndUpdate(condition, { host_code: null });
+        sendNotification(
+          req.body.code,
+          NOTIFY_STATUS.ACCEPT,
+          "Find my family",
+          "Bạn đã bị từ chối"
+        );
         res.json(
           onSuccess(
             { host_code: condition.host_code, code: condition.code },
@@ -132,6 +180,12 @@ router.post("/HostUnsubscribeMember", checkAuth, async (req, res) => {
       let { code, name } = await User.findOneAndUpdate(condition, {
         host_code: null,
       });
+      sendNotification(
+        code,
+        NOTIFY_STATUS.ACCEPT,
+        "Find my family",
+        "Bạn đã bị xoá khỏi gia đình"
+      );
       res.json(onSuccess({ code, name }, "Đã xoá thành viên"));
     }
   } catch (error) {

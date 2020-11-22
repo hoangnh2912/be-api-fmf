@@ -3,46 +3,7 @@ const router = express.Router();
 const Notify = require("../models/Notify");
 const User = require("../models/User");
 const { onError, onSuccess, onSuccessArray, checkAuth } = require("../const");
-
-const sendNotification = async (
-  code,
-  type,
-  headings = "Find my family",
-  contents = "Chúc bạn 1 ngày tốt lành",
-  body = {}
-) => {
-  const user = await User.findOne({ code });
-  if (user) {
-    const { deviceId } = user;
-    var axios = require("axios");
-    var data = JSON.stringify({
-      app_id: "bd947489-155a-4152-bb81-d64fdb0af249",
-      headings: { en: headings },
-      contents: { en: contents },
-      data: body,
-      android_channel_id: "7728994d-5f5f-4429-a2e6-e8a17ec24cec",
-      include_player_ids: [deviceId],
-    });
-
-    var config = {
-      method: "post",
-      url: "https://onesignal.com/api/v1/notifications",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      data,
-    };
-
-    axios(config)
-      .then(function (response) {
-        console.log(JSON.stringify(response.data));
-        new Notify({ contents, headings, code, type }).save();
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
-  }
-};
+const { sendNotification } = require("../utils/notify");
 
 router.get("/GetNotify", checkAuth, async (req, res) => {
   try {
@@ -50,12 +11,14 @@ router.get("/GetNotify", checkAuth, async (req, res) => {
     const notis = await Notify.find({ code });
     res.json(
       onSuccessArray(
-        notis.map(({ headings, contents, createAt, type }) => ({
-          headings,
-          contents,
-          createAt,
-          type,
-        }))
+        notis
+          .map(({ headings, contents, createAt, type }) => ({
+            headings,
+            contents,
+            createAt,
+            type,
+          }))
+          .sort((a, b) => b.createAt - a.createAt)
       )
     );
   } catch (error) {
@@ -66,8 +29,26 @@ router.get("/GetNotify", checkAuth, async (req, res) => {
 
 router.post("/SendMessage", async (req, res) => {
   try {
-    const { code, type } = req.body;
-    sendNotification(code, type);
+    const { code, type, text } = req.body;
+    const userSend = await User.findOne({ code: req.headers.code });
+    if (userSend) {
+      let contents = "";
+      let headings = "";
+      const { VIBRANT, MESSAGE } = require("../const").NOTIFY_STATUS;
+      switch (type) {
+        case VIBRANT:
+          contents = `${userSend.name} đã gửi cảnh báo đến bạn`;
+          headings = `Cảnh báo từ người thân`;
+          break;
+        case MESSAGE:
+          contents = `${text}`;
+          headings = `${userSend.name} đã gửi tin nhắn đến bạn`;
+          break;
+        default:
+          return res.json(onError("Sai mã loại notify"));
+      }
+      sendNotification(code, type, headings, contents);
+    }
     res.json(onSuccess({}));
   } catch (error) {
     console.log(error);
